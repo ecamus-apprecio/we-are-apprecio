@@ -272,6 +272,16 @@
 
         <div class="grid lg:grid-cols-[1fr_320px] gap-6">
           <div class="space-y-6">
+
+            <!-- SECCIÓN EN VIVO -->
+            <div id="live-match-section" class="hide">
+              <div class="flex items-center gap-2 mb-3">
+                <span class="inline-flex items-center gap-1.5 text-white text-xs font-bold px-3 py-1 rounded-full animate-pulse" style="background:#FA345E;">⚡ EN VIVO</span>
+                <span class="text-brand-muted text-sm" id="live-match-count"></span>
+              </div>
+              <div id="live-match-cards" class="space-y-4"></div>
+            </div>
+
             <section>
               <div class="flex items-center justify-between mb-3">
                 <h2 class="font-display text-2xl text-brand-ink">PRÓXIMOS PARTIDOS</h2>
@@ -1502,7 +1512,88 @@ function generateNarrative() {
   return unique.sort(() => Math.random() - 0.5).slice(0, 8);
 }
 
+function renderLiveMatchSection() {
+  const liveMatches = FIXTURE.filter(m => effectiveStatus(m) === 'live');
+  const section = document.getElementById('live-match-section');
+  if (!section) return;
+  if (liveMatches.length === 0) { section.classList.add('hide'); return; }
+  section.classList.remove('hide');
+  document.getElementById('live-match-count').textContent =
+    liveMatches.length === 1 ? '1 partido jugándose ahora' : `${liveMatches.length} partidos en curso`;
+
+  const members = STORE.currentPoolId && STORE.poolMemberEmails[STORE.currentPoolId]
+    ? [...STORE.poolMemberEmails[STORE.currentPoolId]]
+    : Object.keys(STORE.users);
+
+  document.getElementById('live-match-cards').innerHTML = liveMatches.map(m => {
+    const home = TEAMS[m.home], away = TEAMS[m.away];
+    const score = effectiveScore(m);
+    const groupChip = m.group
+      ? `<span class="chip chip-gray">Grupo ${m.group}</span>`
+      : `<span class="chip chip-gray">${roundLabel(m.round)}</span>`;
+
+    const allBets = members.map(email => {
+      const pred = getPrediction(m.id, email);
+      const u = STORE.users[email];
+      if (!u || !pred) return null;
+      return { u, pred };
+    }).filter(Boolean).sort((a, b) => a.u.name.localeCompare(b.u.name));
+
+    const previewBets = allBets.slice(0, 6);
+    const myPred = STORE.session ? getPrediction(m.id) : null;
+
+    return `
+      <div class="card p-4 border-2" style="border-color:#FA345E;">
+        <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+          ${groupChip}
+          <span class="text-[11px] text-brand-muted">${fmtDate(m.date)} · ${m.time}</span>
+        </div>
+        <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-3 mb-4">
+          <div class="flex items-center gap-2 justify-end">
+            <div class="font-bold text-sm text-right">${home?.name ?? m.home}</div>
+            <img src="${flagUrl(home?.flag)}" class="flag-round flex-shrink-0">
+          </div>
+          <div class="flex flex-col items-center gap-1 min-w-[72px]">
+            <div class="font-display text-3xl" style="color:#FA345E;">
+              ${score.home != null ? `${score.home} <span class="text-brand-muted">-</span> ${score.away}` : `<span class="text-brand-muted text-2xl">VS</span>`}
+            </div>
+            ${myPred ? `<div class="text-[10px] font-semibold" style="color:#B2A8E7;">Tu apuesta: ${myPred.home}-${myPred.away}</div>` : ''}
+          </div>
+          <div class="flex items-center gap-2">
+            <img src="${flagUrl(away?.flag)}" class="flag-round flex-shrink-0">
+            <div class="font-bold text-sm">${away?.name ?? m.away}</div>
+          </div>
+        </div>
+        ${allBets.length > 0 ? `
+          <div class="border-t border-gray-100 pt-3">
+            <div class="text-[11px] text-brand-muted font-semibold uppercase tracking-wide mb-2">Apuestas del pool</div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
+              ${previewBets.map(b => `
+                <div class="flex items-center gap-2 p-2 rounded-lg bg-gray-50 border border-gray-100 ${b.u.email === STORE.session ? 'bg-orange-50' : ''}">
+                  <img src="${flagUrl(TEAMS[b.u.favTeam]?.flag)}" class="flag-sm flex-shrink-0">
+                  <div class="min-w-0 flex-1">
+                    <div class="text-xs font-semibold truncate">${b.u.name}${b.u.email === STORE.session ? ' <span style="color:#FA345E;">(tú)</span>' : ''}</div>
+                    <div class="font-display text-sm" style="color:#B2A8E7;">${b.pred.home}-${b.pred.away}</div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+            ${allBets.length > 6 ? `
+              <button onclick="showAllBets('${m.id}')"
+                class="w-full py-2 rounded-xl text-sm font-bold border-2 transition"
+                style="border-color:#FA345E;color:#FA345E;">
+                Ver todas las apuestas (${allBets.length}) →
+              </button>
+            ` : ''}
+          </div>
+        ` : `<div class="text-xs text-brand-muted text-center pt-2">Nadie del pool apostó este partido.</div>`}
+      </div>
+    `;
+  }).join('');
+}
+
 function renderDashboard() {
+  renderLiveMatchSection();
   const u = currentUser();
   const stats = calcUserStats(u.email);
   document.getElementById('my-points').textContent = stats.points;
