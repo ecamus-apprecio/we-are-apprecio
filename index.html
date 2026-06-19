@@ -335,6 +335,22 @@
         <p class="text-brand-muted mb-4 text-sm">Las apuestas cierran <strong>10 minutos antes</strong> de cada partido. Después puedes ver lo que apostaron los demás.</p>
         <p id="partidos-pts-desc" class="text-xs text-brand-muted mb-6">Sistema de puntos: <strong id="pts-exact-val">3 pts</strong> exacto · <strong id="pts-winner-val">1 pt</strong> ganador o empate sin marcador.</p>
 
+        <!-- Filtro por grupo (combinable con el de abajo) -->
+        <div class="flex flex-wrap gap-2 mb-3">
+          <button class="ranking-chip ranking-chip-active" onclick="filterGroup(null, this)">Todos los grupos</button>
+          <button class="ranking-chip" onclick="filterGroup('A', this)">Grupo A</button>
+          <button class="ranking-chip" onclick="filterGroup('B', this)">Grupo B</button>
+          <button class="ranking-chip" onclick="filterGroup('C', this)">Grupo C</button>
+          <button class="ranking-chip" onclick="filterGroup('D', this)">Grupo D</button>
+          <button class="ranking-chip" onclick="filterGroup('E', this)">Grupo E</button>
+          <button class="ranking-chip" onclick="filterGroup('F', this)">Grupo F</button>
+          <button class="ranking-chip" onclick="filterGroup('G', this)">Grupo G</button>
+          <button class="ranking-chip" onclick="filterGroup('H', this)">Grupo H</button>
+          <button class="ranking-chip" onclick="filterGroup('I', this)">Grupo I</button>
+          <button class="ranking-chip" onclick="filterGroup('J', this)">Grupo J</button>
+          <button class="ranking-chip" onclick="filterGroup('K', this)">Grupo K</button>
+          <button class="ranking-chip" onclick="filterGroup('L', this)">Grupo L</button>
+        </div>
         <div class="flex flex-wrap gap-2 mb-6">
           <button class="ranking-chip ranking-chip-active" onclick="filterMatches('all', this)">Todos</button>
           <button class="ranking-chip" onclick="filterMatches('group', this)">Fase de grupos</button>
@@ -1751,9 +1767,20 @@ function roundLabel(r) {
 
 // ====== PARTIDOS ======
 let _matchFilter = 'all';
+let _groupFilter = null;
+
+function filterGroup(g, btn) {
+  _groupFilter = g;
+  // Actualizar active solo en la fila de grupos (primer div de filtros)
+  btn.closest('.flex').querySelectorAll('.ranking-chip').forEach(b => b.classList.remove('ranking-chip-active'));
+  btn.classList.add('ranking-chip-active');
+  renderPartidos();
+}
+
 function filterMatches(f, btn) {
   _matchFilter = f;
-  document.querySelectorAll('#tab-partidos .ranking-chip').forEach(b => b.classList.remove('ranking-chip-active'));
+  // Actualizar active solo en la fila de tipo (segundo div de filtros)
+  btn.closest('.flex').querySelectorAll('.ranking-chip').forEach(b => b.classList.remove('ranking-chip-active'));
   btn.classList.add('ranking-chip-active');
   renderPartidos();
 }
@@ -1770,6 +1797,8 @@ function renderPartidos() {
   else if (_matchFilter === 'finals') list = list.filter(m => ['r32','r16','qf','sf','3rd','final'].includes(m.round));
   else if (_matchFilter === 'mine') list = list.filter(m => getPrediction(m.id));
   else if (_matchFilter === 'pending') list = list.filter(m => !getPrediction(m.id) && isBettingOpen(m));
+
+  if (_groupFilter) list = list.filter(m => m.group === _groupFilter);
 
   const byDate = {};
   list.forEach(m => {
