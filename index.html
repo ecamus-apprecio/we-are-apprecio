@@ -173,7 +173,10 @@
         </div>
         <button onclick="doLogin()" class="btn btn-primary w-full">Entrar</button>
       </div>
-      <div class="text-center mt-5 text-sm text-brand-muted">
+      <div class="text-center mt-4 text-sm text-brand-muted">
+        <button class="underline" onclick="doForgotPassword()">¿Olvidaste tu contraseña?</button>
+      </div>
+      <div class="text-center mt-3 text-sm text-brand-muted">
         ¿Primera vez? <button class="text-brand-primary font-semibold" onclick="switchToSignup()">Crear cuenta</button>
       </div>
     </div>
@@ -1069,6 +1072,16 @@ async function doSignup() {
     toast('¡Cuenta creada! Bienvenido al pool.', 'success');
   }
   await enterApp();
+}
+
+async function doForgotPassword() {
+  const email = document.getElementById('login-email').value.trim().toLowerCase();
+  if (!email) { toast('Ingresa tu email primero', 'error'); return; }
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: 'https://ecamus-apprecio.github.io/we-are-apprecio'
+  });
+  if (error) { toast('Error: ' + error.message, 'error'); return; }
+  toast('¡Revisa tu correo! Te enviamos el link de recuperación.', 'success');
 }
 
 async function doLogin() {
