@@ -125,6 +125,31 @@
 
 <div id="toasts"></div>
 
+<!-- ============================== RESET PASSWORD SCREEN ============================== -->
+<section id="screen-reset" class="min-h-screen flex items-center justify-center px-4 py-8 hide">
+  <div class="w-full max-w-md">
+    <div class="text-center mb-8">
+      <div class="mb-3 flex justify-center"><img src="https://estudios.apprecio.com/hubfs/logos/Apprecio-logo-rojo.png" alt="Apprecio" style="height:48px;object-fit:contain;"></div>
+      <h1 class="text-4xl font-black uppercase" style="color:#FA345E;">WE ARE APPRECIO</h1>
+      <p class="text-gray-500 mt-1">Mundial 2026 🌍</p>
+    </div>
+    <div class="bg-white rounded-2xl shadow-lg p-8">
+      <h2 class="text-2xl font-black uppercase mb-1">Nueva contraseña</h2>
+      <p class="text-gray-500 text-sm mb-6">Ingresa tu nueva contraseña para continuar.</p>
+      <div id="reset-error" class="hide mb-4 p-3 rounded-lg text-sm font-medium" style="background:#FFE6E8;color:#FA345E;"></div>
+      <div id="reset-success" class="hide mb-4 p-3 rounded-lg text-sm font-medium" style="background:#d1fae5;color:#065f46;"></div>
+      <label class="block text-xs font-bold uppercase tracking-wide text-gray-600 mb-1">Nueva contraseña</label>
+      <input id="reset-password" type="password" placeholder="Mínimo 6 caracteres"
+        class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm mb-4 focus:outline-none focus:border-red-400">
+      <label class="block text-xs font-bold uppercase tracking-wide text-gray-600 mb-1">Confirmar contraseña</label>
+      <input id="reset-password2" type="password" placeholder="Repite la contraseña"
+        class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm mb-6 focus:outline-none focus:border-red-400">
+      <button onclick="doResetPassword()" class="w-full py-3 rounded-xl font-black uppercase text-white text-sm"
+        style="background:#FA345E;">Guardar contraseña</button>
+    </div>
+  </div>
+</section>
+
 <!-- ============================== AUTH SCREEN ============================== -->
 <section id="screen-auth" class="min-h-screen flex items-center justify-center px-4 py-8">
   <div class="w-full max-w-md">
@@ -3010,7 +3035,33 @@ function showTabName(name) {
 populateTeamSelect('signup-team');
 rebuildFixture();
 
+async function doResetPassword() {
+  const pw1 = document.getElementById('reset-password').value;
+  const pw2 = document.getElementById('reset-password2').value;
+  const errEl = document.getElementById('reset-error');
+  const okEl = document.getElementById('reset-success');
+  errEl.classList.add('hide'); okEl.classList.add('hide');
+  if (!pw1 || pw1.length < 6) { errEl.textContent = 'La contraseña debe tener al menos 6 caracteres.'; errEl.classList.remove('hide'); return; }
+  if (pw1 !== pw2) { errEl.textContent = 'Las contraseñas no coinciden.'; errEl.classList.remove('hide'); return; }
+  const { error } = await sb.auth.updateUser({ password: pw1 });
+  if (error) { errEl.textContent = 'Error: ' + error.message; errEl.classList.remove('hide'); return; }
+  okEl.textContent = '¡Contraseña actualizada! Redirigiendo...'; okEl.classList.remove('hide');
+  setTimeout(async () => {
+    await sb.auth.signOut();
+    document.getElementById('screen-reset').classList.add('hide');
+    document.getElementById('screen-auth').classList.remove('hide');
+  }, 2000);
+}
+
 (async function init() {
+  // Detectar si viene de un link de recuperación de contraseña
+  const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
+  if (hashParams.get('type') === 'recovery') {
+    // Supabase ya leyó el hash y estableció la sesión — mostrar pantalla de reset
+    document.getElementById('screen-reset').classList.remove('hide');
+    return;
+  }
+
   // Chequear si hay sesión activa de Supabase
   const { data: { session } } = await sb.auth.getSession();
   if (session && session.user) {
