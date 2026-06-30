@@ -1961,7 +1961,7 @@ function showAllBets(matchId) {
       const email = k.split('|')[0];
       const u = STORE.users[email];
       if (!u) return null;
-      const pr = finished ? calcPredPoints(p, effectiveScore(m)) : null;
+      const pr = finished ? calcPredPoints(p, effectiveScore(m), m.round) : null;
       return { user: u, pred: p, points: pr?.points ?? null };
     })
     .filter(Boolean)
